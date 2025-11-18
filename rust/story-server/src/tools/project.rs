@@ -1,0 +1,253 @@
+use crate::error::{Result, StoryError};
+use crate::models::{ProjectLength, ProjectStatus, StoryProject};
+use chrono::Utc;
+use rusqlite::Connection;
+use serde_json::{json, Value};
+use uuid::Uuid;
+
+/// Create a new story project
+pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
+    // Extract parameters
+    let title = params
+        .get("title")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| StoryError::validation("Missing required field: title"))?;
+
+    let genre = params.get("genre").and_then(|v| v.as_str());
+
+    let target_length_str = params
+        .get("targetLength")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| StoryError::validation("Missing required field: targetLength"))?;
+
+    let intended_length = ProjectLength::from_str(target_length_str)
+        .ok_or_else(|| StoryError::validation(format!("Invalid targetLength: {}", target_length_str)))?;
+
+    let description = params.get("description").and_then(|v| v.as_str());
+
+    // Validate title length
+    if title.len() > 200 {
+        return Err(StoryError::validation("Title must be 200 characters or less"));
+    }
+
+    // Create project
+    let project = StoryProject {
+        id: Uuid::new_v4(),
+        title: title.to_string(),
+        genre: genre.map(|s| s.to_string()),
+        intended_length: intended_length.clone(),
+        description: description.map(|s| s.to_string()),
+        status: ProjectStatus::Draft,
+        word_count: 0,
+        metadata: None,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    };
+
+    // Insert into database
+    conn.execute(
+        "INSERT INTO story_projects (id, title, genre, intended_length, description, status, word_count, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        (
+            project.id.to_string(),
+            &project.title,
+            &project.genre,
+            intended_length.to_string(),
+            &project.description,
+            project.status.to_string(),
+            project.word_count,
+            project.created_at.to_rfc3339(),
+            project.updated_at.to_rfc3339(),
+        ),
+    ).map_err(|e| {
+        if e.to_string().contains("UNIQUE constraint failed") {
+            StoryError::duplicate(format!("A project with title '{}' already exists", title))
+        } else {
+            StoryError::DatabaseError(e)
+        }
+    })?;
+
+    log::info!("Created story project: {} ({})", project.title, project.id);
+
+    // Return project details
+    Ok(json!({
+        "projectId": project.id.to_string(),
+        "title": project.title,
+        "genre": project.genre,
+        "intendedLength": intended_length.to_string(),
+        "status": project.status.to_string(),
+        "wordCount": project.word_count,
+        "createdAt": project.created_at.to_rfc3339(),
+        "dbPath": format!("data/{}.db", project.title.replace(" ", "_"))
+    }))
+}
+
+/// Load an existing story project
+pub fn load_story_project(conn: &Connection, params: Value) -> Result<Value> {
+    let project_id_str = params
+        .get("projectId")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| StoryError::validation("Missing required field: projectId"))?;
+
+    let project_id = Uuid::parse_str(project_id_str)
+        .map_err(|_| StoryError::validation("Invalid UUID format for projectId"))?;
+
+    // Query project
+    let mut stmt = conn.prepare(
+        "SELECT id, title, genre, intended_length, description, status, word_count, created_at, updated_at
+         FROM story_projects WHERE id = ?1"
+    )?;
+
+    let project = stmt.query_row([project_id.to_string()], |row| {
+        Ok(StoryProject {
+            id: Uuid::parse_str(row.get::<_, String>(0)?.as_str()).unwrap(),
+            title: row.get(1)?,
+            genre: row.get(2)?,
+            intended_length: ProjectLength::from_str(&row.get::<_, String>(3)?).unwrap(),
+            description: row.get(4)?,
+            status: ProjectStatus::from_str(&row.get::<_, String>(5)?).unwrap(),
+            word_count: row.get(6)?,
+            metadata: None,
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7)?)
+                .unwrap()
+                .with_timezone(&Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+                .unwrap()
+                .with_timezone(&Utc),
+        })
+    }).map_err(|e| {
+        if e == rusqlite::Error::QueryReturnedNoRows {
+            StoryError::not_found(format!("Project not found: {}", project_id))
+        } else {
+            StoryError::DatabaseError(e)
+        }
+    })?;
+
+    log::info!("Loaded story project: {} ({})", project.title, project.id);
+
+    Ok(json!({
+        "projectId": project.id.to_string(),
+        "title": project.title,
+        "genre": project.genre,
+        "intendedLength": project.intended_length.to_string(),
+        "description": project.description,
+        "status": project.status.to_string(),
+        "wordCount": project.word_count,
+        "createdAt": project.created_at.to_rfc3339(),
+        "updatedAt": project.updated_at.to_rfc3339()
+    }))
+}
+
+/// List all story projects
+pub fn list_story_projects(conn: &Connection, _params: Value) -> Result<Value> {
+    let mut stmt = conn.prepare(
+        "SELECT id, title, genre, intended_length, status, word_count, updated_at
+         FROM story_projects
+         ORDER BY updated_at DESC"
+    )?;
+
+    let projects = stmt
+        .query_map([], |row| {
+            Ok(json!({
+                "projectId": row.get::<_, String>(0)?,
+                "title": row.get::<_, String>(1)?,
+                "genre": row.get::<_, Option<String>>(2)?,
+                "intendedLength": row.get::<_, String>(3)?,
+                "status": row.get::<_, String>(4)?,
+                "wordCount": row.get::<_, i32>(5)?,
+                "updatedAt": row.get::<_, String>(6)?
+            }))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    log::info!("Listed {} story projects", projects.len());
+
+    Ok(json!({
+        "projects": projects
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_create_story_project_success() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let conn = db::initialize_database(&db_path).unwrap();
+
+        let params = json!({
+            "title": "Test Novel",
+            "genre": "Fantasy",
+            "targetLength": "novel"
+        });
+
+        let result = create_story_project(&conn, params);
+        assert!(result.is_ok());
+
+        let response = result.unwrap();
+        assert!(response.get("projectId").is_some());
+        assert_eq!(response.get("title").unwrap(), "Test Novel");
+        assert_eq!(response.get("status").unwrap(), "draft");
+    }
+
+    #[test]
+    fn test_create_story_project_duplicate_title() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let conn = db::initialize_database(&db_path).unwrap();
+
+        let params = json!({
+            "title": "Duplicate",
+            "targetLength": "novel"
+        });
+
+        create_story_project(&conn, params.clone()).unwrap();
+        let result = create_story_project(&conn, params);
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), StoryError::DuplicateEntry(_)));
+    }
+
+    #[test]
+    fn test_load_story_project() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let conn = db::initialize_database(&db_path).unwrap();
+
+        let create_params = json!({
+            "title": "Load Test",
+            "targetLength": "novel"
+        });
+
+        let create_result = create_story_project(&conn, create_params).unwrap();
+        let project_id = create_result.get("projectId").unwrap().as_str().unwrap();
+
+        let load_params = json!({"projectId": project_id});
+        let load_result = load_story_project(&conn, load_params);
+
+        assert!(load_result.is_ok());
+        let loaded = load_result.unwrap();
+        assert_eq!(loaded.get("title").unwrap(), "Load Test");
+    }
+
+    #[test]
+    fn test_list_story_projects() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let conn = db::initialize_database(&db_path).unwrap();
+
+        create_story_project(&conn, json!({"title": "Project 1", "targetLength": "novel"})).unwrap();
+        create_story_project(&conn, json!({"title": "Project 2", "targetLength": "novella"})).unwrap();
+
+        let result = list_story_projects(&conn, json!({}));
+        assert!(result.is_ok());
+
+        let response = result.unwrap();
+        let projects = response.get("projects").unwrap().as_array().unwrap();
+        assert_eq!(projects.len(), 2);
+    }
+}

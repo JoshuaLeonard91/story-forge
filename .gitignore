@@ -1,0 +1,54 @@
+# Specification & Planning Files (not needed by users)
+specs/
+.specify/
+CLAUDE.md
+.claude/commands/speckit*.md
+.claude/settings.local.json
+
+# Rust Build Artifacts
+rust/story-server/target/
+rust/story-server/debug/
+rust/story-server/release/
+rust/story-server/**/*.rs.bk
+rust/story-server/**/*.rlib
+rust/story-server/**/*.prof*
+
+# SQLite Databases (user data - not committed)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Release Packages
+releases/
+
+# Logs
+*.log
+
+# Environment Files
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.bak
+
+# NPM
+node_modules/
+package-lock.json
+yarn.lock
+*.tgz
+
+# Note: bin/story-server.exe IS committed (pre-built binary for users)
+# Note: rust/story-server/Cargo.lock IS committed (reproducible builds)
+# Note: templates/ directory IS committed (scaffolding templates)

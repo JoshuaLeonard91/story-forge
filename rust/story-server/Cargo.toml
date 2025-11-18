@@ -1,0 +1,42 @@
+[package]
+name = "story-server"
+version = "0.1.0"
+edition = "2021"
+authors = ["Story Writing Engine Contributors"]
+description = "MCP server for AI-assisted novel writing with selective memory management"
+license = "MIT"
+
+[[bin]]
+name = "story-server"
+path = "src/main.rs"
+
+[dependencies]
+# Database
+rusqlite = { version = "0.32", features = ["bundled", "vtab", "uuid"] }
+refinery = { version = "0.8", features = ["rusqlite"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# UUID and DateTime
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+[dev-dependencies]
+# Property-based testing
+proptest = "1.4"
+
+# Testing utilities
+tempfile = "3.8"

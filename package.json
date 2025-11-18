@@ -1,0 +1,48 @@
+{
+  "name": "story-forge",
+  "version": "0.1.0",
+  "description": "AI-assisted novel writing tool for Claude Code with Rust MCP server",
+  "keywords": [
+    "claude-code",
+    "mcp-server",
+    "creative-writing",
+    "novel-writing",
+    "story-planning",
+    "character-management",
+    "world-building",
+    "litrpg",
+    "fantasy-writing"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_USERNAME/story-forge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/story-forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/story-forge/issues"
+  },
+  "bin": {
+    "story-forge": "./bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "templates/",
+    "postinstall.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "preferGlobal": true
+}

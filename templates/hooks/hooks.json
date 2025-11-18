@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "SessionStart": {
+      "description": "Load active story project on session start",
+      "enabled": false,
+      "command": "/writer.load"
+    }
+  }
+}
