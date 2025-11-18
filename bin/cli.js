@@ -35,7 +35,7 @@ function showVersion() {
 
 function initProject(projectName) {
   if (!projectName) {
-    console.error('❌ Error: Project name is required');
+    console.error('Error: Project name is required');
     console.log('\nUsage: story-forge init <project-name>');
     process.exit(1);
   }
@@ -44,54 +44,38 @@ function initProject(projectName) {
 
   // Check if directory already exists
   if (fs.existsSync(targetDir)) {
-    console.error(`❌ Error: Directory "${projectName}" already exists`);
+    console.error(`Error: Directory "${projectName}" already exists`);
     process.exit(1);
   }
 
-  console.log(`\n📚 Creating story project: ${projectName}`);
-  console.log(`📁 Location: ${targetDir}\n`);
+  console.log(`\nCreating story project: ${projectName}`);
+  console.log(`Location: ${targetDir}\n`);
 
   try {
     // Create project directory
     fs.mkdirSync(targetDir, { recursive: true });
 
     // Copy template files
-    console.log('📋 Copying template files...');
+    console.log('Copying template files...');
     copyRecursive(TEMPLATES_DIR, targetDir);
 
-    // Create data directory
-    const dataDir = path.join(targetDir, 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Update .mcp.json with project-specific settings
-    const mcpConfigPath = path.join(targetDir, '.mcp.json');
-    if (fs.existsSync(mcpConfigPath)) {
-      const mcpConfig = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
-      // Ensure data directory is set correctly
-      if (mcpConfig.mcpServers && mcpConfig.mcpServers['story-db']) {
-        mcpConfig.mcpServers['story-db'].env.STORY_DATA_DIR = 'data';
-      }
-      fs.writeFileSync(mcpConfigPath, JSON.stringify(mcpConfig, null, 2));
-    }
-
-    console.log('\n✅ Project created successfully!\n');
+    console.log('\nProject created successfully!\n');
     console.log('Next steps:');
     console.log(`  1. cd ${projectName}`);
     console.log('  2. Open folder in Claude Code');
-    console.log('  3. Try /writer.start to create your first story!\n');
-    console.log('📖 See QUICKSTART.md for a guided tutorial');
+    console.log('  3. Run /writer.setup to configure the MCP server');
+    console.log('  4. Try /writer.start to create your first story!\n');
+    console.log('See INSTALLATION.md for setup instructions');
 
   } catch (error) {
-    console.error(`\n❌ Error creating project: ${error.message}`);
+    console.error(`\nError creating project: ${error.message}`);
     process.exit(1);
   }
 }
 
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) {
-    console.warn(`⚠️  Warning: Template directory not found: ${src}`);
+    console.warn(`Warning: Template directory not found: ${src}`);
     return;
   }
 
@@ -133,7 +117,7 @@ function main() {
     return;
   }
 
-  console.error(`❌ Unknown command: ${args[0]}`);
+  console.error(`Unknown command: ${args[0]}`);
   console.log('\nRun "story-forge --help" for usage information');
   process.exit(1);
 }

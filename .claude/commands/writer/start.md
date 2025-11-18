@@ -1,48 +1,40 @@
 ---
-description: Create new story project with guided wizard (title, genre, target length, plot structure)
+description: Create new story project with guided wizard
 allowed-tools: ["mcp__story-db__createStoryProject", "mcp__story-db__initializePlotStructure"]
 ---
 
-# Story Project Creation Wizard
+You are helping the user create a new story project. Guide them through these questions ONE AT A TIME:
 
-I'll help you create a new story project. Let me gather the essential information:
+1. **Story Title** - Ask: "What's the title of your story?"
 
-## Step 1: Basic Information
+2. **Genre** - After they respond, ask: "What genre is this story?" and provide these options:
+   - Epic Fantasy (Lord of the Rings, Wheel of Time)
+   - LitRPG (Solo Leveling, The Primal Hunter)
+   - Progression Fantasy (Cradle, Mother of Learning)
+   - Cultivation/Xianxia (I Shall Seal the Heavens)
+   - Urban Fantasy (Dresden Files)
+   - Science Fiction
+   - Contemporary Fiction
+   - Other (let them specify)
 
-**1. Story Title:** What's the title of your story?
+3. **Target Length** - After they choose genre, ask: "What's your target length?" with options:
+   - Short Story (under 20,000 words)
+   - Novella (20,000-50,000 words)
+   - Novel (50,000-150,000 words)
+   - Series (150,000+ words)
 
-**2. Genre Selection:**
-1. Epic Fantasy - Long-form fantasy with worldbuilding (Lord of the Rings, Wheel of Time)
-2. LitRPG - Game progression, stats, levels (Solo Leveling, The Primal Hunter)
-3. Progression Fantasy - Power growth, less stats focus
-4. Cultivation/Xianxia - Realms, qi, martial arts
-5. Urban Fantasy - Modern + supernatural
-6. Science Fiction - Space, tech, future
-7. Contemporary Fiction - Realistic, modern
-8. Custom (specify your own)
+4. **Plot Structure** - After they choose length, ask: "Which plot structure would you like to use?" with options:
+   - Three-Act Structure (Setup → Conflict → Resolution)
+   - Five-Act Structure (Classic dramatic arc)
+   - Hero's Journey (Epic transformation)
+   - Custom/Freeform (No predefined structure)
 
-**3. Target Length:**
-1. Short Story (< 20,000 words)
-2. Novella (20,000-50,000 words)
-3. Novel (50,000-150,000 words)
-4. Series (150,000+ words across multiple books)
+After gathering all four answers:
+1. Show them a summary of what will be created
+2. Ask "Does this look correct? (yes/no)"
+3. If yes, use the MCP tools to create the project:
+   - Call `mcp__story-db__createStoryProject` with the gathered information
+   - Call `mcp__story-db__initializePlotStructure` to set up acts based on chosen structure
+4. Confirm success and suggest next steps (/writer.character.add, /writer.world.rule)
 
-**4. Plot Structure:**
-1. Three-Act Structure - Setup → Conflict → Resolution
-2. Five-Act Structure - Classic dramatic structure
-3. Hero's Journey - Epic transformation arc
-4. Custom/Freeform - No predefined structure
-
----
-
-After you provide these details, I will:
-1. Call `mcp__story-db__createStoryProject` to create the project database entry
-2. Call `mcp__story-db__initializePlotStructure` to set up your chosen plot structure
-3. Display your new project ID and summary
-
-Once created, you can:
-- Add characters with `/writer.character.add`
-- Define world rules with `/writer.world.rule`
-- Start planning chapters with `/writer.chapter.add`
-
-Let's begin! Please answer the questions above.
+IMPORTANT: Only ask ONE question at a time. Wait for their answer before proceeding to the next question.

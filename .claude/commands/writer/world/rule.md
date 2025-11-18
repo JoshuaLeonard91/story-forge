@@ -1,40 +1,41 @@
 ---
-description: Define world rule (magic system, physics, social laws, technology limits)
-allowed-tools: ["mcp__story-db__addWorldRule"]
+description: Define world rule with guided wizard
+allowed-tools: ["mcp__story-db__addWorldRule", "mcp__story-db__listStoryProjects"]
 ---
 
-# World Rule Definition
+You are helping the user define a world rule for their story. World rules ensure consistency in worldbuilding. Guide them through these questions ONE AT A TIME:
 
-I'll help you define a rule for your story world. World rules ensure consistency in your worldbuilding.
+1. **Project Selection** - First, check if they have multiple projects:
+   - Call `mcp__story-db__listStoryProjects` to see available projects
+   - If multiple exist, ask: "Which project is this rule for?" and show the list
+   - If only one exists, use that project automatically
 
-## Required Information
+2. **Rule Name** - Ask: "What should this rule be called?"
+   (Examples: "Magic System: Mana Cost", "Technology: No FTL Travel", "Social Law: Noble Privileges")
 
-**1. Rule Name:** Clear, concise name (e.g., "Magic System: Mana Cost", "Technology: No FTL Travel")
+3. **Rule Description** - After they provide the name, ask: "Explain how this rule works in detail"
+   (This should be a thorough explanation of the rule and its implications)
 
-**2. Description:** Detailed explanation of how this rule works
+4. **Scope** - After the description, ask: "What's the scope of this rule?" with options:
+   - Universal (Applies everywhere in your world)
+   - Regional (Only in certain locations)
+   - Situational (Only in specific circumstances)
 
-**3. Scope:**
-1. Universal - Applies everywhere in your world
-2. Regional - Only applies in certain locations
-3. Situational - Applies in specific circumstances
+5. **Examples** - After scope, ask: "Can you provide 1-2 concrete examples of this rule in action?"
+   (Optional but highly recommended - helps with consistency later)
 
-## Optional Details (recommended)
+6. **Keywords** - Finally, ask: "What keywords should tag this rule for easy searching?"
+   (Examples: magic, mana, technology, combat, social, physics - comma separated)
 
-**4. Examples:** Concrete examples of the rule in action
+After gathering all information:
+1. Show them a summary of the rule
+2. Ask "Does this look correct? (yes/no)"
+3. If yes, call `mcp__story-db__addWorldRule` with all the gathered details
+4. Confirm success and explain that this rule will be used for context retrieval when writing scenes
 
-**5. Keywords:** Tags for easy searching (magic, mana, technology, combat, etc.)
+Suggest next steps:
+- Add more world rules to build out the magic system, technology, social structures, etc.
+- Start adding characters with `/writer.character.add`
+- Begin writing scenes that follow these rules
 
----
-
-After you provide these details, I will:
-1. Call `mcp__story-db__addWorldRule` to save the rule to your project database
-2. Display the rule ID and summary
-3. The rule will be used by the context retrieval system when writing scenes
-
-**Examples of World Rules:**
-- "Magic requires line of sight to target"
-- "Teleportation is impossible due to quantum anchoring"
-- "Social hierarchy: Nobles → Merchants → Commoners → Serfs"
-- "Dragons cannot lie but can mislead"
-
-Please provide the world rule details above.
+IMPORTANT: Only ask ONE question at a time. Wait for their answer before proceeding to the next question.
