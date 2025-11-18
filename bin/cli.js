@@ -63,7 +63,7 @@ function initProject(projectName) {
     console.log('Next steps:');
     console.log(`  1. cd ${projectName}`);
     console.log('  2. Open folder in Claude Code');
-    console.log('  3. Run /writer.setup to configure the MCP server');
+    console.log('  3. Run /writer.mcp.setup to configure the MCP server');
     console.log('  4. Try /writer.start to create your first story!\n');
     console.log('See INSTALLATION.md for setup instructions');
 

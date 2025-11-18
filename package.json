@@ -24,7 +24,8 @@
     "url": "https://github.com/YOUR_USERNAME/story-forge/issues"
   },
   "bin": {
-    "story-forge": "./bin/cli.js"
+    "story-forge": "./bin/cli.js",
+    "story-server": "./bin/story-server-wrapper.js"
   },
   "files": [
     "bin/",
