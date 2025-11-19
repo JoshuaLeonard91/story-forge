@@ -27,38 +27,67 @@ Proceed with the interactive wizard below.
 
 ## Interactive Wizard (Only if MCP server is available)
 
-Guide them through these questions ONE AT A TIME:
+Use the AskUserQuestion tool to collect all story information at once:
 
-1. **Story Title** - Ask: "What's the title of your story?"
+```
+AskUserQuestion with these 4 questions:
+```
 
-2. **Genre** - After they respond, ask: "What genre is this story?" and provide these options:
-   - Epic Fantasy (Lord of the Rings, Wheel of Time)
-   - LitRPG (Solo Leveling, The Primal Hunter)
-   - Progression Fantasy (Cradle, Mother of Learning)
-   - Cultivation/Xianxia (I Shall Seal the Heavens)
-   - Urban Fantasy (Dresden Files)
-   - Science Fiction
-   - Contemporary Fiction
-   - Other (let them specify)
+1. **Story Title** (question 1):
+   - question: "What's the title of your story?"
+   - header: "Story Title"
+   - options: [
+       {label: "Enter custom title", description: "Provide your own story title"}
+     ]
+   - multiSelect: false
 
-3. **Target Length** - After they choose genre, ask: "What's your target length?" with options:
-   - Short Story (under 20,000 words)
-   - Novella (20,000-50,000 words)
-   - Novel (50,000-150,000 words)
-   - Series (150,000+ words)
+   Note: User will select "Other" to enter custom title
 
-4. **Plot Structure** - After they choose length, ask: "Which plot structure would you like to use?" with options:
-   - Three-Act Structure (Setup → Conflict → Resolution)
-   - Five-Act Structure (Classic dramatic arc)
-   - Hero's Journey (Epic transformation)
-   - Custom/Freeform (No predefined structure)
+2. **Genre** (question 2):
+   - question: "What genre is this story?"
+   - header: "Genre"
+   - options: [
+       {label: "Epic Fantasy", description: "Lord of the Rings, Wheel of Time"},
+       {label: "LitRPG", description: "Solo Leveling, The Primal Hunter"},
+       {label: "Progression Fantasy", description: "Cradle, Mother of Learning"},
+       {label: "Urban Fantasy", description: "Dresden Files, magic in modern world"}
+     ]
+   - multiSelect: false
 
-After gathering all four answers:
-1. Show them a summary of what will be created
-2. Ask "Does this look correct? (yes/no)"
-3. If yes, use the MCP tools to create the project:
-   - Call `mcp__story-db__createStoryProject` with the gathered information
-   - Call `mcp__story-db__initializePlotStructure` to set up acts based on chosen structure
+3. **Target Length** (question 3):
+   - question: "What's your target length?"
+   - header: "Length"
+   - options: [
+       {label: "Short Story", description: "Under 20,000 words"},
+       {label: "Novella", description: "20,000-50,000 words"},
+       {label: "Novel", description: "50,000-150,000 words"},
+       {label: "Series", description: "150,000+ words across multiple books"}
+     ]
+   - multiSelect: false
+
+4. **Plot Structure** (question 4):
+   - question: "Which plot structure would you like to use?"
+   - header: "Plot"
+   - options: [
+       {label: "Three-Act", description: "Setup → Conflict → Resolution"},
+       {label: "Five-Act", description: "Classic dramatic arc with five acts"},
+       {label: "Hero's Journey", description: "Epic transformation arc"},
+       {label: "Custom", description: "No predefined structure"}
+     ]
+   - multiSelect: false
+
+After collecting answers from AskUserQuestion:
+1. Extract the answers from the response
+2. Show them a summary of what will be created
+3. Use the MCP tools to create the project:
+   - Call `mcp__story-db__createStoryProject` with:
+     - title: from question 1 (use "Other" text if they provided custom)
+     - genre: from question 2 (label selected)
+     - targetLength: from question 3 (label selected, convert to lowercase)
+     - description: Generate a brief description based on their choices
+   - Call `mcp__story-db__initializePlotStructure` with:
+     - story_project_id: from create response
+     - structure_type: from question 4 (label selected, convert to snake_case)
 4. Confirm success with the project ID and suggest next steps:
    - /writer.character.add - Add your protagonist and other characters
    - /writer.world.rule - Define magic systems, world laws, etc.
@@ -66,6 +95,6 @@ After gathering all four answers:
 
 IMPORTANT:
 - ALWAYS check MCP server availability FIRST
-- Only ask ONE question at a time
-- Wait for their answer before proceeding
-- Complete the entire wizard in ONE session - don't stop midway
+- Use AskUserQuestion to ask ALL questions at once
+- Process answers after user submits the form
+- Create the project immediately after receiving answers
