@@ -5,23 +5,23 @@ allowed-tools: ["mcp__story-db__createStoryProject", "mcp__story-db__initializeP
 
 You are helping the user create a new story project. This wizard will guide them through setting up their story step-by-step.
 
-## FIRST: Check MCP Server Availability
+## FIRST: Verify MCP Server
 
-Before starting the wizard, try to call `mcp__story-db__listStoryProjects` to verify the MCP server is running.
+**Immediately call the MCP tool** `mcp__story-db__listStoryProjects` with an empty params object `{}`.
 
-**If the MCP server is NOT available (tool call fails):**
-Stop immediately and tell them:
+DO NOT use Bash commands to check availability. Just call the tool directly.
+
+**If the tool call succeeds:**
+Proceed with the interactive wizard below.
+
+**If the tool call fails with an error:**
+Stop and tell them:
 
 ```
 The Story Forge MCP server is not configured yet. Please run /writer.mcp.setup first to configure the server, then restart Claude Code.
 
-After restarting, run /writer.start again to create your project.
+After restarting, run /writer.start again.
 ```
-
-Do NOT ask any questions if the MCP server isn't available.
-
-**If the MCP server IS available:**
-Proceed with the interactive wizard below.
 
 ---
 
