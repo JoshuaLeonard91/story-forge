@@ -27,53 +27,86 @@ Proceed with the wizard below.
 
 ## Interactive Wizard (Only if MCP server is available)
 
-First, check which project to use:
-- Call `mcp__story-db__listStoryProjects` to get available projects
-- If NO projects exist, tell them to run /writer.start first and stop
-- If only ONE project exists, use it automatically
-- If MULTIPLE projects exist, use AskUserQuestion to let them select which project
+**Step 1:** Get available projects by calling `mcp__story-db__listStoryProjects`
 
-Then use AskUserQuestion to collect all character information at once:
+**Step 2:** Determine which project to use:
+- If NO projects exist: Tell user to run /writer.start first and STOP
+- If ONE project exists: Use that project automatically (save the project_id)
+- If MULTIPLE projects exist: Ask user to select which project (use AskUserQuestion with project list)
+
+**Step 3:** Call AskUserQuestion with this EXACT configuration:
+
+```json
+{
+  "questions": [
+    {
+      "question": "What's the character's name?",
+      "header": "Name",
+      "options": [
+        {"label": "Enter name", "description": "Character's full name"}
+      ],
+      "multiSelect": false
+    },
+    {
+      "question": "What role does this character play?",
+      "header": "Role",
+      "options": [
+        {"label": "Protagonist", "description": "Main hero"},
+        {"label": "Antagonist", "description": "Primary villain"},
+        {"label": "Supporting", "description": "Secondary character"},
+        {"label": "Minor", "description": "Background character"}
+      ],
+      "multiSelect": false
+    },
+    {
+      "question": "Describe their personality",
+      "header": "Personality",
+      "options": [
+        {"label": "Enter personality", "description": "Traits, demeanor, quirks"}
+      ],
+      "multiSelect": false
+    },
+    {
+      "question": "What do they look like?",
+      "header": "Appearance",
+      "options": [
+        {"label": "Enter appearance", "description": "Height, build, hair, eyes, features"}
+      ],
+      "multiSelect": false
+    }
+  ]
+}
+```
+
+**Step 4:** Wait for user to submit the form.
+
+**Step 5:** Extract answers:
+- Name: answers["0"] (Other text)
+- Role: answers["1"]
+- Personality: answers["2"] (Other text)
+- Appearance: answers["3"] (Other text)
+
+**Step 6:** Create the character:
 
 ```
-AskUserQuestion with these questions:
+Call mcp__story-db__addCharacter with:
+{
+  "story_project_id": <project_id from step 2>,
+  "name": <name from answers>,
+  "role": <role lowercase, e.g. "protagonist">,
+  "personality_traits": <personality from answers>,
+  "physical_description": <appearance from answers>,
+  "backstory": "",
+  "current_state": ""
+}
 ```
 
-1. **Character Name**:
-   - question: "What's the character's name?"
-   - header: "Name"
-   - options: [{label: "Enter name", description: "Provide character's full name"}]
-   - multiSelect: false
+**Step 7:** Confirm success and show:
+- Character "[name]" added successfully
+- Next steps: /writer.character.add (more characters), /writer.world.rule
 
-2. **Character Role**:
-   - question: "What role does this character play?"
-   - header: "Role"
-   - options: [
-       {label: "Protagonist", description: "Main hero of the story"},
-       {label: "Antagonist", description: "Primary villain or opposition"},
-       {label: "Supporting", description: "Important secondary character"},
-       {label: "Minor", description: "Background character"}
-     ]
-   - multiSelect: false
-
-3. **Personality Traits**:
-   - question: "Describe their personality"
-   - header: "Personality"
-   - options: [{label: "Describe personality", description: "Personality traits, demeanor, quirks"}]
-   - multiSelect: false
-
-4. **Physical Description**:
-   - question: "What do they look like?"
-   - header: "Appearance"
-   - options: [{label: "Describe appearance", description: "Height, build, hair, eyes, distinctive features"}]
-   - multiSelect: false
-
-After collecting answers:
-1. Show them a summary of the character
-2. Call `mcp__story-db__addCharacter` with all the gathered details
-3. Confirm success and suggest next steps:
-   - Add character relationships with `/writer.character.relationship`
-   - Add more characters with `/writer.character.add`
-   - Start writing scenes that feature this character
-
-IMPORTANT: Use AskUserQuestion to ask ALL questions at once, then process answers.
+CRITICAL RULES:
+- MUST check project availability FIRST
+- MUST use AskUserQuestion EXACTLY as shown
+- MUST wait for form submission
+- NO back-and-forth - collect ALL at once
