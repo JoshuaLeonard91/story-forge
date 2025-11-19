@@ -1,11 +1,39 @@
-# Specification & Planning Files (not needed by users)
+# =============================================================================
+# SPECKIT & CLAUDE CODE GENERATED FILES (not needed by users)
+# =============================================================================
 specs/
 .specify/
 CLAUDE.md
+plan.md
+tasks.md
+spec.md
 .claude/commands/speckit*.md
 .claude/settings.local.json
+.claude/todos/
 
-# Rust Build Artifacts
+# =============================================================================
+# USER DATA & STORIES (never commit user's creative work!)
+# =============================================================================
+# Database files (contain user's story data)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+*.db
+*.db-shm
+*.db-wal
+
+# User's story content
+stories/
+
+# Test data
+test_data/
+*_test_results.md
+MCP_SERVER_TEST_RESULTS.md
+
+# =============================================================================
+# BUILD ARTIFACTS
+# =============================================================================
+# Rust
 rust/story-server/target/
 rust/story-server/debug/
 rust/story-server/release/
@@ -13,42 +41,57 @@ rust/story-server/**/*.rs.bk
 rust/story-server/**/*.rlib
 rust/story-server/**/*.prof*
 
-# SQLite Databases (user data - not committed)
-data/*.db
-data/*.db-shm
-data/*.db-wal
-
-# Release Packages
-releases/
-
-# Logs
-*.log
-
-# Environment Files
-.env
-.env.*
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Temporary Files
-*.tmp
-*.bak
-
 # NPM
 node_modules/
 package-lock.json
 yarn.lock
 *.tgz
 
-# Note: bin/story-server.exe IS committed (pre-built binary for users)
-# Note: rust/story-server/Cargo.lock IS committed (reproducible builds)
-# Note: templates/ directory IS committed (scaffolding templates)
+# =============================================================================
+# LOGS & TEMPORARY FILES
+# =============================================================================
+*.log
+story-server.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.working
+*.swp
+*.swo
+*~
+nul
+
+# =============================================================================
+# SENSITIVE CONFIGURATION
+# =============================================================================
+.env
+.env.*
+.mcp.json.local
+
+# =============================================================================
+# IDE & OS FILES
+# =============================================================================
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =============================================================================
+# RELEASE ARTIFACTS
+# =============================================================================
+releases/
+
+# =============================================================================
+# IMPORTANT: WHAT IS COMMITTED
+# =============================================================================
+# ✓ bin/story-server.exe - Pre-built binary for users (Windows)
+# ✓ templates/ - Command scaffolding templates
+# ✓ rust/story-server/src/ - Source code
+# ✓ rust/story-server/Cargo.toml - Rust dependencies
+# ✓ rust/story-server/Cargo.lock - For reproducible builds
+# ✓ package.json - NPM metadata
+# ✓ README.md - Documentation
+# ✓ .claude/commands/writer/*.md - Command templates (not backups)
+# ✓ .claude/settings.json - Project-wide MCP settings template

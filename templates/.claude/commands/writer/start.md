@@ -40,7 +40,7 @@ Say: "Let's create your story project! What's the title of your story?"
 
 Wait for the user to reply with their title. Save this as `storyTitle`.
 
-**Step 2:** Call the AskUserQuestion tool with the EXACT JSON below. DO NOT modify it. DO NOT add additional options. DO NOT change labels or descriptions. Copy it EXACTLY as shown:
+**Step 2:** Call the AskUserQuestion tool with the EXACT JSON below. DO NOT modify it. Copy it EXACTLY as shown:
 
 ```json
 {
@@ -75,38 +75,29 @@ Wait for the user to reply with their title. Save this as `storyTitle`.
         {"label": "Series", "description": "150,000+ words, multiple books"}
       ],
       "multiSelect": false
-    },
-    {
-      "question": "Which plot structure?",
-      "header": "Plot",
-      "options": [
-        {"label": "Three-Act Structure", "description": "Setup → Conflict → Resolution (Hollywood standard)"},
-        {"label": "Five-Act Structure", "description": "Freytag's Pyramid - exposition, rising action, climax, falling action, denouement"},
-        {"label": "Hero's Journey", "description": "Joseph Campbell's monomyth - call to adventure, trials, return"},
-        {"label": "Seven-Point Story", "description": "Hook, Plot Turn 1, Pinch 1, Midpoint, Pinch 2, Plot Turn 2, Resolution"},
-        {"label": "Save the Cat", "description": "Blake Snyder's 15 beats - popular for novels and screenplays"},
-        {"label": "Kishotenketsu", "description": "Japanese 4-act: Introduction, Development, Twist, Conclusion (no conflict required)"},
-        {"label": "In Medias Res", "description": "Start in the middle of action, fill in backstory later"},
-        {"label": "Custom/Freeform", "description": "No predefined structure - organic storytelling"}
-      ],
-      "multiSelect": false
     }
   ]
 }
 ```
 
-WARNING: DO NOT ADD ANY OTHER OPTIONS. DO NOT modify the labels. DO NOT add default values. The JSON above is COMPLETE. Use it EXACTLY as written.
+WARNING: DO NOT ADD ANY OTHER OPTIONS. DO NOT modify the labels. The JSON above is COMPLETE. Use it EXACTLY as written.
 
 **Step 3:** Wait for user to submit the form with all their answers.
 
-**Step 4:** Extract answers:
+**Step 4:** Ask for plot structure directly.
+
+Say: "What plot structure would you like to use? (Examples: Three-Act Structure, Five-Act Structure, Hero's Journey, Seven-Point Story, Save the Cat, Kishotenketsu, In Medias Res, Custom/Freeform, or describe your own)"
+
+Wait for the user to reply. Save this as `plotStructure`.
+
+**Step 5:** Extract answers:
 - Title: Use `storyTitle` from Step 1
 - Series: answers["0"] - If "Standalone" use "standalone", else use "Other" text input
 - Genre: answers["1"] - Can be preset option or "Other" for custom genre
 - Length: answers["2"] - Can be preset option or "Other" for custom length
-- Plot: answers["3"] - Can be preset option or "Other" for custom structure
+- Plot: Use `plotStructure` from Step 4
 
-**Step 5:** Show detailed confirmation and ask for approval:
+**Step 6:** Show detailed confirmation and ask for approval:
 
 First, display a summary like this (plain text, no markdown bold or emojis):
 ```
@@ -146,49 +137,50 @@ Then call the AskUserQuestion tool with EXACTLY this JSON (do not modify):
 
 Wait for user to submit. If they select "No, cancel", stop and say "Project creation cancelled."
 
-If they select "Yes, create project", proceed to Step 6.
+If they select "Yes, create project", proceed to Step 7.
 
-**Step 6:** Create the story project:
+**Step 7:** Determine structure type from user's plot choice:
+
+Based on what they said in Step 4, map it to one of these structure types:
+- If they mentioned "Three-Act" or "3-Act" → use "three_act"
+- If they mentioned "Five-Act" or "5-Act" → use "five_act"  
+- If they mentioned "Hero's Journey" or "Monomyth" → use "hero_journey"
+- For anything else (Seven-Point, Save the Cat, Kishotenketsu, In Medias Res, Custom, Freeform, or other) → use "custom"
+
+Save this as `structureType`.
+
+**Step 8:** Create the story project:
 
 Call `mcp__story-db__createStoryProject` with:
 ```json
 {
   "title": <title from step 1>,
-  "seriesName": <series from step 4>,
+  "seriesName": <series from step 5>,
   "description": "A <genre> <length>",
-  "genre": <genre from step 4, convert to lowercase snake_case if needed>,
+  "genre": <genre from step 5, convert to lowercase snake_case if needed>,
   "targetLength": <length converted to: "short_story", "novella", "novel", or "series">
 }
 ```
 
 **IMPORTANT:** After calling, extract the `projectId` from the response. If you don't see a response, the tool still worked - MCP tools execute silently in VS Code.
 
-**Step 7:** Verify the project was created:
+**Step 9:** Verify the project was created:
 
 Call `mcp__story-db__listStoryProjects` with empty params `{}`.
 
 From the response, find the project with the title you just created and get its `projectId`.
 
-**Step 8:** Initialize plot structure:
+**Step 10:** Initialize plot structure:
 
 Call `mcp__story-db__initializePlotStructure` with:
 ```json
 {
-  "projectId": <projectId from step 7>,
-  "structureType": <plot converted to structure type:
-    - "Three-Act Structure" → "three_act"
-    - "Five-Act Structure" → "five_act"
-    - "Hero's Journey" → "hero_journey"
-    - "Seven-Point Story" → "custom"
-    - "Save the Cat" → "custom"
-    - "Kishotenketsu" → "custom"
-    - "In Medias Res" → "custom"
-    - "Custom/Freeform" → "custom"
-  >
+  "projectId": <projectId from step 9>,
+  "structureType": <structureType from step 7>
 }
 ```
 
-**Step 9:** Confirm success to the user:
+**Step 11:** Confirm success to the user:
 
 Tell them (plain text, no markdown bold or emojis):
 ```
@@ -199,7 +191,7 @@ Project Details:
 - Series: <series>
 - Genre: <genre>
 - Target Length: <length>
-- Plot Structure: <structure>
+- Plot Structure: <plotStructure from step 4>
 - Project ID: <projectId>
 
 Folder Location:
@@ -215,10 +207,10 @@ Next steps:
 
 CRITICAL RULES:
 - MUST ask for title as plain text FIRST (Step 1)
-- MUST use the AskUserQuestion JSON EXACTLY as provided for series/genre/length/plot - DO NOT MODIFY
-- DO NOT add extra options
-- DO NOT change option labels or descriptions
-- User fills out the 4-question form and submits ONCE
+- MUST ask for plot structure as plain text (Step 4)
+- MUST use the AskUserQuestion JSON EXACTLY as provided for series/genre/length - DO NOT MODIFY
+- DO NOT add extra options (max 4 options per question)
+- User fills out the 3-question form and submits ONCE
 - MUST show detailed confirmation summary
 - MUST use AskUserQuestion for final confirmation (Yes/No options)
 - MUST create project only after user confirms "Yes, create project"
