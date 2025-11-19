@@ -1,32 +1,63 @@
 #!/usr/bin/env node
 
+/**
+ * Simple stdio proxy for the Rust story-server
+ *
+ * This wrapper just spawns the Rust binary and pipes stdio through.
+ * No MCP SDK - just pure stdio proxying.
+ */
+
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Determine binary name based on platform
-const isWindows = process.platform === 'win32';
-const binaryName = isWindows ? 'story-server.exe' : 'story-server';
-const binaryPath = path.join(__dirname, binaryName);
+// Find the story-server binary
+function findStoryServerBinary() {
+  if (process.env.STORY_SERVER_BIN) {
+    return process.env.STORY_SERVER_BIN;
+  }
 
-// Check if binary exists
-if (!fs.existsSync(binaryPath)) {
-  console.error(`Error: story-server binary not found at ${binaryPath}`);
-  console.error('Please install story-forge properly: npm install -g story-forge');
-  process.exit(1);
+  const scriptDir = __dirname;
+  const binaryName = process.platform === 'win32' ? 'story-server.exe' : 'story-server';
+  const localBinary = path.join(scriptDir, binaryName);
+
+  if (fs.existsSync(localBinary)) {
+    return localBinary;
+  }
+
+  return binaryName;
 }
 
-// Spawn the Rust binary and pass through all args
-const child = spawn(binaryPath, process.argv.slice(2), {
-  stdio: 'inherit',
-  env: process.env
+const STORY_SERVER_BIN = findStoryServerBinary();
+const RUST_LOG = process.env.RUST_LOG || 'error';
+const STORY_DATA_DIR = process.env.STORY_DATA_DIR || 'data';
+
+// Spawn the Rust binary
+const storyServer = spawn(STORY_SERVER_BIN, [], {
+  env: {
+    ...process.env,
+    RUST_LOG,
+    STORY_DATA_DIR
+  },
+  stdio: ['pipe', 'pipe', 'inherit']
 });
 
-child.on('error', (err) => {
-  console.error(`Failed to start story-server: ${err.message}`);
+// Pipe stdin to Rust binary
+process.stdin.pipe(storyServer.stdin);
+
+// Pipe Rust binary output to stdout
+storyServer.stdout.pipe(process.stdout);
+
+// Handle errors
+storyServer.on('error', (err) => {
+  console.error('Failed to start story-server:', err.message);
   process.exit(1);
 });
 
-child.on('exit', (code) => {
+storyServer.on('exit', (code) => {
   process.exit(code || 0);
 });
+
+// Forward termination signals
+process.on('SIGTERM', () => storyServer.kill('SIGTERM'));
+process.on('SIGINT', () => storyServer.kill('SIGINT'));

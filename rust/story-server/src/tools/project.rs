@@ -4,6 +4,8 @@ use chrono::Utc;
 use rusqlite::Connection;
 use serde_json::{json, Value};
 use uuid::Uuid;
+use std::fs;
+use std::path::PathBuf;
 
 /// Create a new story project
 pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
@@ -25,10 +27,20 @@ pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
 
     let description = params.get("description").and_then(|v| v.as_str());
 
+    let series_name = params
+        .get("seriesName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("standalone");
+
     // Validate title length
     if title.len() > 200 {
         return Err(StoryError::validation("Title must be 200 characters or less"));
     }
+
+    // Create project metadata
+    let project_metadata = json!({
+        "series": series_name
+    });
 
     // Create project
     let project = StoryProject {
@@ -39,15 +51,15 @@ pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
         description: description.map(|s| s.to_string()),
         status: ProjectStatus::Draft,
         word_count: 0,
-        metadata: None,
+        metadata: Some(project_metadata.to_string()),
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };
 
     // Insert into database
     conn.execute(
-        "INSERT INTO story_projects (id, title, genre, intended_length, description, status, word_count, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO story_projects (id, title, genre, intended_length, description, status, word_count, metadata, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         (
             project.id.to_string(),
             &project.title,
@@ -56,6 +68,7 @@ pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
             &project.description,
             project.status.to_string(),
             project.word_count,
+            &project.metadata,
             project.created_at.to_rfc3339(),
             project.updated_at.to_rfc3339(),
         ),
@@ -69,16 +82,49 @@ pub fn create_story_project(conn: &Connection, params: Value) -> Result<Value> {
 
     log::info!("Created story project: {} ({})", project.title, project.id);
 
+    // Create folder structure: stories/{series_name}/{title}/chapters/
+    let sanitized_title = project.title.replace("/", "-").replace("\\", "-");
+    let sanitized_series = series_name.replace("/", "-").replace("\\", "-");
+    
+    let story_path = PathBuf::from("stories")
+        .join(&sanitized_series)
+        .join(&sanitized_title);
+    
+    let chapters_path = story_path.join("chapters");
+    
+    // Create directories
+    if let Err(e) = fs::create_dir_all(&chapters_path) {
+        log::warn!("Failed to create story directories: {}", e);
+    }
+    
+    // Create metadata.json
+    let metadata = json!({
+        "projectId": project.id.to_string(),
+        "title": project.title,
+        "series": series_name,
+        "genre": project.genre,
+        "intendedLength": intended_length.to_string(),
+        "createdAt": project.created_at.to_rfc3339()
+    });
+    
+    let metadata_path = story_path.join("metadata.json");
+    if let Err(e) = fs::write(&metadata_path, serde_json::to_string_pretty(&metadata).unwrap_or_default()) {
+        log::warn!("Failed to write metadata.json: {}", e);
+    }
+    
+    let story_folder = format!("stories/{}/{}", sanitized_series, sanitized_title);
+
     // Return project details
     Ok(json!({
         "projectId": project.id.to_string(),
         "title": project.title,
+        "series": series_name,
         "genre": project.genre,
         "intendedLength": intended_length.to_string(),
         "status": project.status.to_string(),
         "wordCount": project.word_count,
         "createdAt": project.created_at.to_rfc3339(),
-        "dbPath": format!("data/{}.db", project.title.replace(" ", "_"))
+        "storyFolder": story_folder,
     }))
 }
 
@@ -94,7 +140,7 @@ pub fn load_story_project(conn: &Connection, params: Value) -> Result<Value> {
 
     // Query project
     let mut stmt = conn.prepare(
-        "SELECT id, title, genre, intended_length, description, status, word_count, created_at, updated_at
+        "SELECT id, title, genre, intended_length, description, status, word_count, metadata, created_at, updated_at
          FROM story_projects WHERE id = ?1"
     )?;
 
@@ -107,11 +153,11 @@ pub fn load_story_project(conn: &Connection, params: Value) -> Result<Value> {
             description: row.get(4)?,
             status: ProjectStatus::from_str(&row.get::<_, String>(5)?).unwrap(),
             word_count: row.get(6)?,
-            metadata: None,
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7)?)
+            metadata: row.get(7)?,
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
                 .unwrap()
                 .with_timezone(&Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+            updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(9)?)
                 .unwrap()
                 .with_timezone(&Utc),
         })

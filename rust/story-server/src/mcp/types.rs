@@ -110,3 +110,11 @@ mod tests {
         assert_eq!(resp.error.unwrap().code, INTERNAL_ERROR);
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tool {
+    pub name: String,
+    pub description: String,
+    #[serde(rename = "inputSchema")]
+    pub input_schema: Value,
+}

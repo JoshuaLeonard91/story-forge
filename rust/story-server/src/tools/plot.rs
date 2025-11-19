@@ -4,6 +4,8 @@ use chrono::Utc;
 use rusqlite::Connection;
 use serde_json::{json, Value};
 use uuid::Uuid;
+use std::fs;
+use std::path::PathBuf;
 
 /// Initialize plot structure for a story project
 pub fn initialize_plot_structure(conn: &Connection, params: Value) -> Result<Value> {
@@ -181,6 +183,7 @@ pub fn add_scene(conn: &Connection, params: Value) -> Result<Value> {
     let location = params.get("location").and_then(|v| v.as_str());
     let time_description = params.get("timeDescription").and_then(|v| v.as_str());
     let scene_outline = params.get("sceneOutline").and_then(|v| v.as_str());
+    let content = params.get("content").and_then(|v| v.as_str()).unwrap_or("");
 
     // Get current max position in chapter
     let position: i32 = conn
@@ -190,6 +193,70 @@ pub fn add_scene(conn: &Connection, params: Value) -> Result<Value> {
             |row| row.get(0),
         )
         .unwrap_or(1);
+
+    // Get project info and chapter number for file path
+    let (project_title, series_json, chapter_number): (String, Option<String>, i32) = conn
+        .query_row(
+            "SELECT sp.title, sp.metadata, c.number
+             FROM chapters c
+             JOIN acts a ON c.act_id = a.id
+             JOIN plot_structures ps ON a.plot_structure_id = ps.id
+             JOIN story_projects sp ON ps.story_project_id = sp.id
+             WHERE c.id = ?1",
+            [chapter_id.to_string()],
+            |row| Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?
+            )),
+        )
+        .map_err(|_| StoryError::not_found("Chapter not found or project info unavailable"))?;
+
+    // Extract series from metadata JSON
+    let series = if let Some(metadata_str) = series_json {
+        serde_json::from_str::<Value>(&metadata_str)
+            .ok()
+            .and_then(|v| v.get("series").and_then(|s| s.as_str()).map(|s| s.to_string()))
+            .unwrap_or_else(|| "standalone".to_string())
+    } else {
+        "standalone".to_string()
+    };
+
+    // Calculate word count if content is provided
+    let word_count = if !content.is_empty() {
+        content.split_whitespace().count() as i32
+    } else {
+        0
+    };
+
+    // Write content to file if provided
+    let mut file_path_str = String::new();
+    if !content.is_empty() {
+        let sanitized_title = project_title.replace("/", "-").replace("\\", "-");
+        let sanitized_series = series.replace("/", "-").replace("\\", "-");
+
+        let story_path = PathBuf::from("stories")
+            .join(&sanitized_series)
+            .join(&sanitized_title)
+            .join("chapters")
+            .join(format!("chapter-{:02}", chapter_number));
+
+        let scenes_path = story_path.join("scenes");
+
+        // Create directories
+        if let Err(e) = fs::create_dir_all(&scenes_path) {
+            log::warn!("Failed to create scene directories: {}", e);
+        }
+
+        // Write scene file
+        let scene_file = scenes_path.join(format!("scene-{:02}.txt", position));
+        if let Err(e) = fs::write(&scene_file, content) {
+            log::warn!("Failed to write scene file: {}", e);
+        } else {
+            file_path_str = scene_file.to_string_lossy().to_string();
+            log::info!("Wrote scene content to: {}", file_path_str);
+        }
+    }
 
     let scene_id = Uuid::new_v4();
 
@@ -203,9 +270,9 @@ pub fn add_scene(conn: &Connection, params: Value) -> Result<Value> {
             position,
             location,
             time_description,
-            "", // Empty content initially
-            0,
-            "planned",
+            content,
+            word_count,
+            if content.is_empty() { "planned" } else { "written" },
             scene_outline,
             0, // false
             Utc::now().to_rfc3339(),
@@ -215,18 +282,23 @@ pub fn add_scene(conn: &Connection, params: Value) -> Result<Value> {
 
     log::info!("Created scene: {} (position {})", scene_id, position);
 
-    Ok(json!({
+    let mut response = json!({
         "sceneId": scene_id.to_string(),
         "title": title,
         "position": position,
         "location": location,
         "timeDescription": time_description,
         "sceneOutline": scene_outline,
-        "status": "planned",
-        "wordCount": 0
-    }))
-}
+        "status": if content.is_empty() { "planned" } else { "written" },
+        "wordCount": word_count
+    });
 
+    if !file_path_str.is_empty() {
+        response["filePath"] = json!(file_path_str);
+    }
+
+    Ok(response)
+}
 /// Get complete plot structure for a project
 pub fn get_plot_structure(conn: &Connection, params: Value) -> Result<Value> {
     let project_id_str = params

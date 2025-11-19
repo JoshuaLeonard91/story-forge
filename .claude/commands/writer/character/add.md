@@ -1,40 +1,31 @@
 ---
 description: Add new character with guided wizard
-allowed-tools: ["mcp__story-db__addCharacter", "mcp__story-db__listStoryProjects"]
 ---
 
 You are helping the user add a new character to their story. This wizard will guide them through creating a detailed character profile.
 
-## FIRST: Verify MCP Server
+## FIRST: Check if MCP Tools are Available
 
-**Immediately call the MCP tool** `mcp__story-db__listStoryProjects` with an empty params object `{}`.
+Look at your available tools list. Do you see any tools starting with `mcp__story-db__`?
 
-DO NOT use Bash commands to check availability. Just call the tool directly.
+**If NO** (you don't see any `mcp__story-db__` tools):
+Stop and tell them the MCP server is not loaded. Refer them to /writer:start for troubleshooting steps.
 
-**If the tool call succeeds:**
-Proceed with the wizard below (use the returned projects list).
-
-**If the tool call fails with an error:**
-Stop and tell them:
-
-```
-The Story Forge MCP server is not configured yet. Please run /writer.mcp.setup first to configure the server, then restart Claude Code.
-
-After restarting, run /writer.character.add again.
-```
+**If YES** (MCP tools are available):
+Proceed with the wizard below.
 
 ---
 
-## Interactive Wizard (Only if MCP server is available)
+## Interactive Wizard
 
-**Step 1:** Get available projects by calling `mcp__story-db__listStoryProjects`
+**Step 1:** Call `mcp__story-db__listStoryProjects` with empty params `{}`
 
 **Step 2:** Determine which project to use:
-- If NO projects exist: Tell user to run /writer.start first and STOP
-- If ONE project exists: Use that project automatically (save the project_id)
-- If MULTIPLE projects exist: Ask user to select which project (use AskUserQuestion with project list)
+- If NO projects exist: Tell user "No projects found. Please run /writer:start to create a project first." and STOP
+- If ONE project exists: Use that project automatically (save the projectId), proceed to Step 3
+- If MULTIPLE projects exist: Call AskUserQuestion to let them select project, then proceed to Step 3
 
-**Step 3:** Call AskUserQuestion with this EXACT configuration:
+**Step 3:** Call AskUserQuestion with this EXACT configuration (all questions in one form):
 
 ```json
 {
@@ -51,10 +42,10 @@ After restarting, run /writer.character.add again.
       "question": "What role does this character play?",
       "header": "Role",
       "options": [
-        {"label": "Protagonist", "description": "Main hero"},
-        {"label": "Antagonist", "description": "Primary villain"},
-        {"label": "Supporting", "description": "Secondary character"},
-        {"label": "Minor", "description": "Background character"}
+        {"label": "Protagonist", "description": "Main hero of the story"},
+        {"label": "Antagonist", "description": "Primary villain or opposing force"},
+        {"label": "Supporting", "description": "Secondary character with important role"},
+        {"label": "Minor", "description": "Background or minor character"}
       ],
       "multiSelect": false
     },
@@ -70,7 +61,7 @@ After restarting, run /writer.character.add again.
       "question": "What do they look like?",
       "header": "Appearance",
       "options": [
-        {"label": "Enter appearance", "description": "Height, build, hair, eyes, features"}
+        {"label": "Enter appearance", "description": "Height, build, hair, eyes, distinctive features"}
       ],
       "multiSelect": false
     }
@@ -78,35 +69,82 @@ After restarting, run /writer.character.add again.
 }
 ```
 
-**Step 4:** Wait for user to submit the form.
+**Step 4:** Wait for user to submit the form with all their answers.
 
 **Step 5:** Extract answers:
-- Name: answers["0"] (Other text)
-- Role: answers["1"]
-- Personality: answers["2"] (Other text)
-- Appearance: answers["3"] (Other text)
+- Name: answers["0"] - Use "Other" text input
+- Role: answers["1"] - Can be preset option or "Other"
+- Personality: answers["2"] - Use "Other" text input
+- Appearance: answers["3"] - Use "Other" text input
 
-**Step 6:** Create the character:
+**Step 6:** Show confirmation summary and ask for approval:
 
+Display summary (plain text, no markdown bold or emojis):
 ```
-Call mcp__story-db__addCharacter with:
+Character Summary
+=================
+
+Name: {name}
+Role: {role}
+Personality: {personality}
+Appearance: {appearance}
+
+This character will be added to your story project.
+```
+
+Then call AskUserQuestion:
+```json
 {
-  "story_project_id": <project_id from step 2>,
-  "name": <name from answers>,
-  "role": <role lowercase, e.g. "protagonist">,
-  "personality_traits": <personality from answers>,
-  "physical_description": <appearance from answers>,
-  "backstory": "",
-  "current_state": ""
+  "questions": [
+    {
+      "question": "Add this character to your project?",
+      "header": "Confirm",
+      "options": [
+        {"label": "Yes, add character", "description": "Create this character"},
+        {"label": "No, cancel", "description": "Cancel character creation"}
+      ],
+      "multiSelect": false
+    }
+  ]
 }
 ```
 
-**Step 7:** Confirm success and show:
-- Character "[name]" added successfully
-- Next steps: /writer.character.add (more characters), /writer.world.rule
+Wait for user to submit. If they select "No, cancel", stop and say "Character creation cancelled."
+
+**Step 7:** Create the character by calling `mcp__story-db__addCharacter`:
+
+```json
+{
+  "projectId": <projectId from step 2>,
+  "name": <name from step 5>,
+  "role": <role from step 5, convert to lowercase>,
+  "personalityTraits": <personality from step 5>,
+  "physicalDescription": <appearance from step 5>,
+  "backstory": "",
+  "currentState": ""
+}
+```
+
+**Step 8:** Confirm success (plain text, no markdown bold or emojis):
+
+```
+Character added successfully!
+
+Character Details:
+- Name: <name>
+- Role: <role>
+- Project: <project title>
+
+Next steps:
+- /writer:character:add - Add more characters
+- /writer:world:rule - Define world-building rules
+- Start writing scenes with your characters
+```
 
 CRITICAL RULES:
 - MUST check project availability FIRST
-- MUST use AskUserQuestion EXACTLY as shown
-- MUST wait for form submission
-- NO back-and-forth - collect ALL at once
+- MUST use ONE AskUserQuestion call with ALL character questions in a single form
+- User fills out entire form and submits ONCE
+- MUST use AskUserQuestion for confirmation
+- MUST use camelCase parameter names (projectId, personalityTraits, physicalDescription, currentState)
+- NO emojis or markdown bold in output

@@ -3,11 +3,13 @@ use rusqlite::Connection;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use super::types::Tool;
 
 pub type ToolHandler = Arc<dyn Fn(&Connection, Value) -> Result<Value> + Send + Sync>;
 
 pub struct ToolRegistry {
     tools: HashMap<String, ToolHandler>,
+    tool_definitions: HashMap<String, Tool>,
     conn: Arc<Mutex<Connection>>,
 }
 
@@ -15,15 +17,24 @@ impl ToolRegistry {
     pub fn new(conn: Connection) -> Self {
         ToolRegistry {
             tools: HashMap::new(),
+            tool_definitions: HashMap::new(),
             conn: Arc::new(Mutex::new(conn)),
         }
     }
 
-    pub fn register<F>(&mut self, name: &str, handler: F)
+    pub fn register<F>(&mut self, name: &str, description: &str, input_schema: Value, handler: F)
     where
         F: Fn(&Connection, Value) -> Result<Value> + Send + Sync + 'static,
     {
         self.tools.insert(name.to_string(), Arc::new(handler));
+        self.tool_definitions.insert(
+            name.to_string(),
+            Tool {
+                name: name.to_string(),
+                description: description.to_string(),
+                input_schema,
+            },
+        );
         log::info!("Registered tool: {}", name);
     }
 
@@ -37,8 +48,8 @@ impl ToolRegistry {
         handler(&conn, params)
     }
 
-    pub fn list_tools(&self) -> Vec<String> {
-        self.tools.keys().cloned().collect()
+    pub fn list_tools(&self) -> Vec<Tool> {
+        self.tool_definitions.values().cloned().collect()
     }
 
     pub fn has_tool(&self, name: &str) -> bool {
@@ -57,7 +68,7 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let mut registry = ToolRegistry::new(conn);
 
-        registry.register("test_tool", |_conn, params| {
+        registry.register("test_tool", "A test tool", json!({"type": "object"}), |_conn, params| {
             Ok(json!({"received": params}))
         });
 
@@ -70,7 +81,9 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let mut registry = ToolRegistry::new(conn);
 
-        registry.register("echo", |_conn, params| Ok(params));
+        registry.register("echo", "Echo tool", json!({"type": "object"}), |_conn, params| {
+            Ok(params)
+        });
 
         let result = registry.call_tool("echo", json!({"message": "hello"})).unwrap();
         assert_eq!(result, json!({"message": "hello"}));
