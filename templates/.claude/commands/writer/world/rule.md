@@ -3,12 +3,36 @@ description: Define world rule with guided wizard
 allowed-tools: ["mcp__story-db__addWorldRule", "mcp__story-db__listStoryProjects"]
 ---
 
-You are helping the user define a world rule for their story. World rules ensure consistency in worldbuilding. Guide them through these questions ONE AT A TIME:
+You are helping the user define a world rule for their story. World rules ensure consistency in worldbuilding.
 
-1. **Project Selection** - First, check if they have multiple projects:
-   - Call `mcp__story-db__listStoryProjects` to see available projects
+## FIRST: Check MCP Server Availability
+
+Try to call `mcp__story-db__listStoryProjects` to verify the MCP server is running.
+
+**If the MCP server is NOT available (tool call fails):**
+Stop immediately and tell them:
+
+```
+The Story Forge MCP server is not configured yet. Please run /writer.mcp.setup first to configure the server, then restart Claude Code.
+
+After restarting, run /writer.world.rule again.
+```
+
+Do NOT ask any questions if the MCP server isn't available.
+
+**If the MCP server IS available:**
+Proceed with the wizard below.
+
+---
+
+## Interactive Wizard (Only if MCP server is available)
+
+Guide them through these questions ONE AT A TIME:
+
+1. **Project Selection** - Check if they have multiple projects:
    - If multiple exist, ask: "Which project is this rule for?" and show the list
    - If only one exists, use that project automatically
+   - If NO projects exist, tell them to run /writer.start first
 
 2. **Rule Name** - Ask: "What should this rule be called?"
    (Examples: "Magic System: Mana Cost", "Technology: No FTL Travel", "Social Law: Noble Privileges")

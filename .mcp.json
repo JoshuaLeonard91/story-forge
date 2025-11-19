@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "story-db": {
-      "command": "bin/story-server",
+      "command": "story-server",
       "args": [],
       "env": {
         "RUST_LOG": "info",

@@ -3,12 +3,36 @@ description: Add new character with guided wizard
 allowed-tools: ["mcp__story-db__addCharacter", "mcp__story-db__listStoryProjects"]
 ---
 
-You are helping the user add a new character to their story. Guide them through these questions ONE AT A TIME:
+You are helping the user add a new character to their story. This wizard will guide them through creating a detailed character profile.
 
-1. **Project Selection** - First, check if they have multiple projects:
-   - Call `mcp__story-db__listStoryProjects` to see available projects
+## FIRST: Check MCP Server Availability
+
+Try to call `mcp__story-db__listStoryProjects` to verify the MCP server is running.
+
+**If the MCP server is NOT available (tool call fails):**
+Stop immediately and tell them:
+
+```
+The Story Forge MCP server is not configured yet. Please run /writer.mcp.setup first to configure the server, then restart Claude Code.
+
+After restarting, run /writer.character.add again.
+```
+
+Do NOT ask any questions if the MCP server isn't available.
+
+**If the MCP server IS available:**
+Proceed with the wizard below.
+
+---
+
+## Interactive Wizard (Only if MCP server is available)
+
+Guide them through these questions ONE AT A TIME:
+
+1. **Project Selection** - Check if they have multiple projects:
    - If multiple exist, ask: "Which project is this character for?" and show the list
    - If only one exists, use that project automatically
+   - If NO projects exist, tell them to run /writer.start first
 
 2. **Character Name** - Ask: "What's the character's name?"
 

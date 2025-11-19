@@ -47,7 +47,13 @@ story-forge init my-novel
 cd my-novel
 ```
 
-Open the folder in Claude Code and start writing.
+Open the folder in Claude Code and configure the MCP server:
+
+```
+/writer.mcp.setup
+```
+
+Follow the wizard to complete setup, then restart Claude Code to activate the MCP server.
 
 ### Manual Install
 
@@ -63,6 +69,7 @@ After installation, use these slash commands in Claude Code:
 
 | Command | Description |
 |---------|-------------|
+| `/writer.mcp.setup` | Configure MCP server (one-time setup per project) |
 | `/writer.start` | Create new story project with guided wizard |
 | `/writer.projects` | List all story projects |
 | `/writer.character.add` | Add new character with wizard |
@@ -70,19 +77,25 @@ After installation, use these slash commands in Claude Code:
 
 ### Example Workflow
 
-1. Create a new project:
+1. Configure MCP server (first time only):
+   ```
+   /writer.mcp.setup
+   ```
+   Confirm setup and restart Claude Code
+
+2. Create a new project:
    ```
    /writer.start
    ```
    Answer the wizard questions (title, genre, target length, plot structure)
 
-2. Add your protagonist:
+3. Add your protagonist:
    ```
    /writer.character.add
    ```
    Provide name, role, personality traits, backstory
 
-3. Define your magic system:
+4. Define your magic system:
    ```
    /writer.world.rule
    ```

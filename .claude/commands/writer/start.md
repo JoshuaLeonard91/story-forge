@@ -1,9 +1,33 @@
 ---
 description: Create new story project with guided wizard
-allowed-tools: ["mcp__story-db__createStoryProject", "mcp__story-db__initializePlotStructure"]
+allowed-tools: ["mcp__story-db__createStoryProject", "mcp__story-db__initializePlotStructure", "mcp__story-db__listStoryProjects"]
 ---
 
-You are helping the user create a new story project. Guide them through these questions ONE AT A TIME:
+You are helping the user create a new story project. This wizard will guide them through setting up their story step-by-step.
+
+## FIRST: Check MCP Server Availability
+
+Before starting the wizard, try to call `mcp__story-db__listStoryProjects` to verify the MCP server is running.
+
+**If the MCP server is NOT available (tool call fails):**
+Stop immediately and tell them:
+
+```
+The Story Forge MCP server is not configured yet. Please run /writer.mcp.setup first to configure the server, then restart Claude Code.
+
+After restarting, run /writer.start again to create your project.
+```
+
+Do NOT ask any questions if the MCP server isn't available.
+
+**If the MCP server IS available:**
+Proceed with the interactive wizard below.
+
+---
+
+## Interactive Wizard (Only if MCP server is available)
+
+Guide them through these questions ONE AT A TIME:
 
 1. **Story Title** - Ask: "What's the title of your story?"
 
@@ -35,6 +59,13 @@ After gathering all four answers:
 3. If yes, use the MCP tools to create the project:
    - Call `mcp__story-db__createStoryProject` with the gathered information
    - Call `mcp__story-db__initializePlotStructure` to set up acts based on chosen structure
-4. Confirm success and suggest next steps (/writer.character.add, /writer.world.rule)
+4. Confirm success with the project ID and suggest next steps:
+   - /writer.character.add - Add your protagonist and other characters
+   - /writer.world.rule - Define magic systems, world laws, etc.
+   - /writer.projects - View all your story projects
 
-IMPORTANT: Only ask ONE question at a time. Wait for their answer before proceeding to the next question.
+IMPORTANT:
+- ALWAYS check MCP server availability FIRST
+- Only ask ONE question at a time
+- Wait for their answer before proceeding
+- Complete the entire wizard in ONE session - don't stop midway

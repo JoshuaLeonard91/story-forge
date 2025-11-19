@@ -13,19 +13,13 @@ Follow these steps:
    - If not, continue with setup
 
 2. **Check for story-server binary:**
-   Try to verify if the binary is available in PATH.
+   Check if the binary is available by running: `which story-server`
 
-   If NOT found, provide installation instructions:
+   If NOT found (command fails or returns empty), provide installation instructions:
    ```
    The story-server binary is not installed globally. Please install it first:
 
-   Option 1: Install via npm (recommended)
    npm install -g story-forge
-
-   Option 2: Build from source
-   - Clone: https://github.com/YOUR_USERNAME/story-forge
-   - Build: cd rust/story-server && cargo build --release
-   - Copy binary to your PATH
 
    After installation, run /writer.mcp.setup again.
    ```
@@ -47,27 +41,53 @@ Follow these steps:
    - multiSelect: false
 
 5. **If they select "Yes", create the configuration:**
-   Create a `.mcp.json` file in the current directory with this exact content:
 
-```json
-{
-  "mcpServers": {
-    "story-db": {
-      "command": "story-server",
-      "args": [],
-      "env": {
-        "RUST_LOG": "info",
-        "STORY_DATA_DIR": "data"
-      }
-    }
-  }
-}
-```
+   Create `.mcp.json` in the current directory.
+
+   **IMPORTANT:** On Windows, use the `cmd` wrapper format. Detect the platform first.
+
+   **For Windows:**
+   ```json
+   {
+     "mcpServers": {
+       "story-db": {
+         "command": "cmd",
+         "args": ["/c", "story-server"],
+         "env": {
+           "RUST_LOG": "info",
+           "STORY_DATA_DIR": "data"
+         }
+       }
+     }
+   }
+   ```
+
+   **For macOS/Linux:**
+   ```json
+   {
+     "mcpServers": {
+       "story-db": {
+         "command": "story-server",
+         "args": [],
+         "env": {
+           "RUST_LOG": "info",
+           "STORY_DATA_DIR": "data"
+         }
+       }
+     }
+   }
+   ```
+
+   Use the Write tool to create this file.
 
 6. **Create data directory:**
-   - Create a `data/` folder in the current directory if it doesn't exist
-   - Create a `.gitkeep` file inside data/ so git tracks the folder
-   - This is where SQLite databases will be stored (one .db file per story project)
+
+   Use the Write tool to create the data directory structure:
+   - Create an empty `.gitkeep` file at `data/.gitkeep`
+
+   DO NOT use Bash commands - use the Write tool directly to ensure cross-platform compatibility.
+
+   This is where SQLite databases will be stored. The MCP server will automatically create `data/story_server.db` when you first use the tools.
 
 7. **Confirm setup complete:**
    "MCP server configured successfully!
@@ -91,3 +111,4 @@ IMPORTANT:
 - Use AskUserQuestion tool for yes/no confirmation
 - Only create files after explicit confirmation
 - Explain clearly what you're doing at each step
+- Follow the official MCP docs format exactly
