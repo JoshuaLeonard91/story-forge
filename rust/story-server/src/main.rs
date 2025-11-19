@@ -43,6 +43,22 @@ fn main() -> Result<()> {
 
                 // Handle MCP methods
                 match method.as_str() {
+                    "initialize" => {
+                        // MCP initialization handshake
+                        let result = serde_json::json!({
+                            "protocolVersion": "2024-11-05",
+                            "capabilities": {
+                                "tools": {}
+                            },
+                            "serverInfo": {
+                                "name": "story-db",
+                                "version": env!("CARGO_PKG_VERSION")
+                            }
+                        });
+                        if let Err(e) = protocol.send_success(id, result) {
+                            error!("Failed to send initialize response: {}", e);
+                        }
+                    }
                     "tools/list" => {
                         // Return list of available tools
                         let tools = registry.list_tools();

@@ -82,10 +82,20 @@ Follow these steps:
 
 6. **Create data directory:**
 
-   Use the Write tool to create the data directory structure:
-   - Create an empty `.gitkeep` file at `data/.gitkeep`
+   **CRITICAL: You MUST use the Write tool to create this file. DO NOT use ANY Bash commands.**
 
-   DO NOT use Bash commands - use the Write tool directly to ensure cross-platform compatibility.
+   Use the Write tool to create an empty file at `data/.gitkeep`
+
+   Example: `Write(file_path="data/.gitkeep", content="")`
+
+   **NEVER use:**
+   - `mkdir data`
+   - `touch data/.gitkeep`
+   - `echo` or `type nul`
+   - ANY Bash command with "nul"
+   - ANY shell redirection (>, >>, 2>)
+
+   The Write tool will automatically create the parent `data/` directory.
 
    This is where SQLite databases will be stored. The MCP server will automatically create `data/story_server.db` when you first use the tools.
 
